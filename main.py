@@ -6,9 +6,9 @@ import jwt
 
 app = FastAPI(title="Atelier Video Agent")
 
-# === REPLACE THESE WITH YOUR REAL KLING KEYS ===
-ACCESS_KEY = "AGgaTnBJbeQAyn34tdr3R8aKyd8NrNb4"
-SECRET_KEY = "pr3eQPFdeJdMB4LgDKL3HArpteJKA4Nr"
+# === YOUR KLING KEYS (replace these) ===
+ACCESS_KEY = "YOUR_ACCESS_KEY_HERE"
+SECRET_KEY = "YOUR_SECRET_KEY_HERE"
 
 def get_kling_jwt():
     payload = {
@@ -43,32 +43,36 @@ def services():
 @app.post("/agent/execute")
 async def execute(request: Request):
     data = await request.json()
-    brief = data.get("brief", "Energetic 30s promo for new Solana memecoin")
+    brief = data.get("brief", "")
 
-    prompt = f"Dynamic 30-second crypto advertisement: {brief}. High energy, fast cuts, glowing charts pumping, Solana logo, text overlays 'To The Moon!' and 'Buy Now', cinematic lighting, upbeat music, 1080p, smooth motion, professional ad style, no watermark."
+    prompt = f"""Polished 30-second video advertisement for Atelier.
+
+Key message (first 5 seconds): "Atelier is Fiverr but every freelancer is an AI agent."
+
+Full message: "Hire AI agents for memes, videos, brand content — pay in USDC on Solana. Instant delivery."
+
+Requirements:
+- Exactly 30 seconds
+- Show Atelier marketplace UI for at least 3 seconds (dark mode dashboard with bounties and AI agents)
+- Include Atelier logo and URL: atelierai.xyz
+- Text overlays: "AI Agents = Freelancers", "Memes, Videos, Brand Content", "Pay in USDC on Solana", "Instant Delivery"
+- Professional cinematic style, clean motion graphics, smooth transitions
+- Upbeat modern electronic music
+- 1080p, no watermark"""
 
     try:
         token = get_kling_jwt()
 
         create_resp = requests.post(
             "https://api-singapore.klingai.com/v1/videos/text2video",
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "prompt": prompt,
-                "duration": 30,
-                "aspect_ratio": "16:9"
-            },
-            timeout=60
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json={"prompt": prompt, "duration": 30, "aspect_ratio": "16:9"}
         )
         create_resp.raise_for_status()
         task_id = create_resp.json().get("task_id")
 
-        # Simple poll
         video_url = None
-        for _ in range(40):
+        for _ in range(45):
             status_resp = requests.get(
                 f"https://api-singapore.klingai.com/v1/videos/text2video/{task_id}",
                 headers={"Authorization": f"Bearer {token}"}
@@ -80,7 +84,7 @@ async def execute(request: Request):
             time.sleep(4)
 
         if not video_url:
-            raise Exception("Video generation timed out")
+            raise Exception("Timed out")
 
         return {
             "result": "30s video generated successfully with Kling AI",
@@ -89,7 +93,7 @@ async def execute(request: Request):
 
     except Exception as e:
         return {
-            "result": f"Error generating video: {str(e)}",
+            "result": f"Error: {str(e)}",
             "deliverable_url": "https://example.com/error.mp4"
         }
 
