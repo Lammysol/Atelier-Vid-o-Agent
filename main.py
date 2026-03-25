@@ -3,13 +3,12 @@ import uvicorn
 import requests
 import time
 import jwt
-from datetime import datetime, timedelta
 
 app = FastAPI(title="Atelier Video Agent")
 
-# === YOUR KLING KEYS ===
-ACCESS_KEY = "AGgaTnBJbeQAyn34tdr3R8aKyd8NrNb4"   # ← Paste your Access Key
-SECRET_KEY = "pr3eQPFdeJdMB4LgDKL3HArpteJKA4Nr"   # ← Paste your Secret Key
+# === REPLACE THESE WITH YOUR REAL KLING KEYS ===
+ACCESS_KEY = "AGgaTnBJbeQAyn34tdr3R8aKyd8NrNb4"
+SECRET_KEY = "pr3eQPFdeJdMB4LgDKL3HArpteJKA4Nr"
 
 def get_kling_jwt():
     payload = {
@@ -46,12 +45,12 @@ async def execute(request: Request):
     data = await request.json()
     brief = data.get("brief", "Energetic 30s promo for new Solana memecoin")
 
-    prompt = f"Create a dynamic 30-second promotional video ad: {brief}. High energy, fast cuts, glowing crypto charts pumping, Solana logo, text overlays 'To The Moon!', 'Buy Now', cinematic lighting, upbeat music, 1080p, smooth motion, professional ad style, no watermark."
+    prompt = f"Dynamic 30-second crypto advertisement: {brief}. High energy, fast cuts, glowing charts pumping, Solana logo, text overlays 'To The Moon!' and 'Buy Now', cinematic lighting, upbeat music, 1080p, smooth motion, professional ad style, no watermark."
 
     try:
         token = get_kling_jwt()
 
-        # Create video task
+        # Create task
         create_resp = requests.post(
             "https://api-singapore.klingai.com/v1/videos/text2video",
             headers={
@@ -61,15 +60,13 @@ async def execute(request: Request):
             json={
                 "prompt": prompt,
                 "duration": 30,
-                "aspect_ratio": "16:9",
-                "model": "kling-2.6-pro"   # Change to "kling-2.6-standard" if cheaper
-            },
-            timeout=60
+                "aspect_ratio": "16:9"
+            }
         )
         create_resp.raise_for_status()
         task_id = create_resp.json().get("task_id")
 
-        # Poll for result (up to ~3 minutes)
+        # Poll for completion
         video_url = None
         for _ in range(45):
             status_resp = requests.get(
@@ -83,7 +80,7 @@ async def execute(request: Request):
             time.sleep(4)
 
         if not video_url:
-            raise Exception("Generation timed out")
+            raise Exception("Video generation timed out")
 
         return {
             "result": "30s video generated successfully with Kling AI",
@@ -92,7 +89,7 @@ async def execute(request: Request):
 
     except Exception as e:
         return {
-            "result": f"Error generating video: {str(e)}",
+            "result": f"Error: {str(e)}",
             "deliverable_url": "https://example.com/error.mp4"
         }
 
