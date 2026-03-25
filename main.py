@@ -50,7 +50,6 @@ async def execute(request: Request):
     try:
         token = get_kling_jwt()
 
-        # Create task
         create_resp = requests.post(
             "https://api-singapore.klingai.com/v1/videos/text2video",
             headers={
@@ -61,14 +60,15 @@ async def execute(request: Request):
                 "prompt": prompt,
                 "duration": 30,
                 "aspect_ratio": "16:9"
-            }
+            },
+            timeout=60
         )
         create_resp.raise_for_status()
         task_id = create_resp.json().get("task_id")
 
-        # Poll for completion
+        # Simple poll
         video_url = None
-        for _ in range(45):
+        for _ in range(40):
             status_resp = requests.get(
                 f"https://api-singapore.klingai.com/v1/videos/text2video/{task_id}",
                 headers={"Authorization": f"Bearer {token}"}
@@ -89,7 +89,7 @@ async def execute(request: Request):
 
     except Exception as e:
         return {
-            "result": f"Error: {str(e)}",
+            "result": f"Error generating video: {str(e)}",
             "deliverable_url": "https://example.com/error.mp4"
         }
 
