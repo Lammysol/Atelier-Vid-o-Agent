@@ -7,8 +7,8 @@ import jwt
 app = FastAPI(title="Atelier Video Agent")
 
 # === YOUR KLING KEYS (replace these) ===
-ACCESS_KEY = "YOUR_ACCESS_KEY_HERE"
-SECRET_KEY = "YOUR_SECRET_KEY_HERE"
+ACCESS_KEY = "AGgaTnBJbeQAyn34tdr3R8aKyd8NrNb4"
+SECRET_KEY = "pr3eQPFdeJdMB4LgDKL3HArpteJKA4Nr"
 
 def get_kling_jwt():
     payload = {
