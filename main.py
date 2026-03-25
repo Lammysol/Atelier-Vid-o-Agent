@@ -2,30 +2,28 @@ from fastapi import FastAPI, Request
 import uvicorn
 import requests
 import time
-import jwt  # We'll add this to requirements
-import os
+import jwt
 from datetime import datetime, timedelta
 
 app = FastAPI(title="Atelier Video Agent")
 
-# === YOUR KEYS ===
+# === YOUR KLING KEYS ===
 ACCESS_KEY = "AGgaTnBJbeQAyn34tdr3R8aKyd8NrNb4"   # ← Paste your Access Key
 SECRET_KEY = "pr3eQPFdeJdMB4LgDKL3HArpteJKA4Nr"   # ← Paste your Secret Key
 
 def get_kling_jwt():
     payload = {
         "iss": ACCESS_KEY,
-        "exp": int(time.time()) + 3600,  # 1 hour expiry
-        "nbf": int(time.time()) - 5
+        "exp": int(time.time()) + 3600,
+        "nbf": int(time.time()) - 10
     }
-    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-    return token
+    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 @app.get("/agent/profile")
 def profile():
     return {
         "name": "MyVideoAdAgent",
-        "description": "Generates 30-second crypto video ads for PumpFun and Solana projects using Kling AI.",
+        "description": "Generates 30-second crypto video ads using Kling AI",
         "capabilities": ["video_gen"]
     }
 
@@ -36,7 +34,7 @@ def services():
             {
                 "id": "svc_1774423718114_fo5dcyjwc",
                 "title": "30-Second Crypto Video Advertisement",
-                "description": "High-quality 30-second promotional video ad for PumpFun or Solana memecoins. Includes text overlays, music, and dynamic visuals.",
+                "description": "High-quality 30-second promotional video ad for PumpFun or Solana memecoins.",
                 "price_usd": "100.00",
                 "category": "video_gen"
             }
@@ -46,56 +44,56 @@ def services():
 @app.post("/agent/execute")
 async def execute(request: Request):
     data = await request.json()
-    brief = data.get("brief", "Create an energetic 30-second promo for a new Solana memecoin")
+    brief = data.get("brief", "Energetic 30s promo for new Solana memecoin")
 
-    prompt = f"30-second high-energy crypto advertisement video: {brief}. Fast cuts, glowing Solana charts pumping up, text overlays 'To The Moon!', 'Buy Now on PumpFun', cinematic lighting, upbeat electronic music vibe, smooth camera moves, 1080p, no watermark, professional ad quality."
+    prompt = f"Create a dynamic 30-second promotional video ad: {brief}. High energy, fast cuts, glowing crypto charts pumping, Solana logo, text overlays 'To The Moon!', 'Buy Now', cinematic lighting, upbeat music, 1080p, smooth motion, professional ad style, no watermark."
 
     try:
-        jwt_token = get_kling_jwt()
+        token = get_kling_jwt()
 
-        # Create task (Kling 2.6+ style - adjust if your dashboard shows different base URL)
+        # Create video task
         create_resp = requests.post(
-            "https://api.klingai.com/v1/videos/text2video",   # Common base; some use api-singapore.klingai.com
+            "https://api-singapore.klingai.com/v1/videos/text2video",
             headers={
-                "Authorization": f"Bearer {jwt_token}",
+                "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json"
             },
             json={
-                "model": "kling-2.6-pro",   # or "kling-2.6-standard" for cheaper
                 "prompt": prompt,
                 "duration": 30,
-                "aspect_ratio": "16:9"
+                "aspect_ratio": "16:9",
+                "model": "kling-2.6-pro"   # Change to "kling-2.6-standard" if cheaper
             },
             timeout=60
         )
         create_resp.raise_for_status()
         task_id = create_resp.json().get("task_id")
 
-        # Poll for completion (up to ~3 minutes)
+        # Poll for result (up to ~3 minutes)
         video_url = None
         for _ in range(45):
             status_resp = requests.get(
-                f"https://api.klingai.com/v1/videos/status/{task_id}",
-                headers={"Authorization": f"Bearer {jwt_token}"}
+                f"https://api-singapore.klingai.com/v1/videos/text2video/{task_id}",
+                headers={"Authorization": f"Bearer {token}"}
             )
-            status_data = status_resp.json()
-            if status_data.get("status") == "completed":
-                video_url = status_data.get("data", {}).get("url")
+            status = status_resp.json()
+            if status.get("status") == "completed":
+                video_url = status.get("data", {}).get("url")
                 break
             time.sleep(4)
 
         if not video_url:
-            raise Exception("Video generation timed out or failed")
+            raise Exception("Generation timed out")
 
         return {
-            "result": "30s video ad generated successfully with Kling AI",
+            "result": "30s video generated successfully with Kling AI",
             "deliverable_url": video_url
         }
 
     except Exception as e:
         return {
-            "result": f"Error: {str(e)}",
-            "deliverable_url": "https://example.com/error-placeholder.mp4"
+            "result": f"Error generating video: {str(e)}",
+            "deliverable_url": "https://example.com/error.mp4"
         }
 
 @app.get("/agent/portfolio")
